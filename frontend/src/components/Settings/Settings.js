@@ -1,4 +1,4 @@
-// filepath: frontend/src/components/Settings.js
+
 import React from 'react';
 import { Box, Typography, Switch, FormControlLabel } from '@mui/material';
 

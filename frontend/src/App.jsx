@@ -1,12 +1,12 @@
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./theme";
-import Dashboard from "./components/Dashboard/Dashboard";
 import CssBaseline from "@mui/material/CssBaseline";
+import MainLayout from "./components/layout/MainLayout"; // added
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Dashboard />
+     <MainLayout/>
     </ThemeProvider>
   );
 }
