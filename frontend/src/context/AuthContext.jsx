@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import jwt_decode from "jwt-decode";
-import * as authService from "../src/services/auth";
-
+import * as authService from "../services/auth";
+import { jwtDecode } from "jwt-decode";
 export const AuthContext = createContext({
   user: null,
   loading: true,
@@ -20,8 +19,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       localStorage.removeItem("access_token");
     }
-    // If your api client needs an auth header helper, call it here.
-    // e.g. api.setAuthToken(token);
+   
   }, []);
 
   useEffect(() => {
@@ -31,7 +29,7 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem("access_token");
         if (token) {
           try {
-            const decoded = jwt_decode(token);
+            const decoded = jwtDecode(token);
             // decoded may contain user info or only claims; adapt as needed
             setUser(decoded.user ?? decoded);
           } catch {
@@ -70,7 +68,7 @@ export const AuthProvider = ({ children }) => {
       if (res?.user) setUser(res.user);
       else {
         try {
-          const decoded = jwt_decode(token);
+          const decoded = jwtDecode(token);
           setUser(decoded.user ?? decoded);
         } catch {
           setUser(null);
@@ -93,7 +91,7 @@ export const AuthProvider = ({ children }) => {
         if (res?.user) setUser(res.user);
         else {
           try {
-            const decoded = jwt_decode(token);
+            const decoded = jwtDecode(token);
             setUser(decoded.user ?? decoded);
           } catch {
             setUser(null);
