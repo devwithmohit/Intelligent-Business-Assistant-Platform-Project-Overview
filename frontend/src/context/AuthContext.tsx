@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }) => {
     } else {
       localStorage.removeItem("access_token");
     }
-   
   }, []);
 
   useEffect(() => {
@@ -117,4 +116,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export default AuthContext;
+export default { AuthContext };
