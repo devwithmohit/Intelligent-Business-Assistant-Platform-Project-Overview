@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "../context/AuthContext";
@@ -7,11 +6,12 @@ import ProtectedRoute from "../components/auth/ProtectedRoute";
 import MainLayout from "../components/layout/MainLayout";
 import Login from "../pages/Login";
 import Signup from "../pages/signup";
-import Dashboard from "../components/Dashboard/Dashboard";
-import Chat from "../components/Chat/Chat";
-import Analytics from "../components/Analytics/Analytics";
-import Settings from "../components/Settings/Settings";
-import AgentStatus from "../components/AgentStatus/AgentStatus";
+// ...existing code...
+import Dashboard from "../pages/Dashboard";
+import Chat from "../pages/Chat";
+import Analytics from "../pages/Analytics";
+import AgentStatus from "../pages/AgentStatus";
+import Settings from "../pages/Settings";
 
 const AppRoutes: React.FC = () => {
   return (
