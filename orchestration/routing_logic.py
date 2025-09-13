@@ -155,7 +155,7 @@ class AgentRunner:
             return await self._svc.run_agent_node(agent_name=agent_name, instance_id=instance_id, config=node_config, context=context)
         raise RoutingError("No agent_service.run_agent_node available to execute agent")
 
-
+    
 async def route_and_execute(
     instance_id: str,
     current_node: str,

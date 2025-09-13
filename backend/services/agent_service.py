@@ -8,6 +8,7 @@ Features:
 - audit logging into agent memory (if memory_service available)
 - track running tasks and allow cancellation
 """
+
 import asyncio
 import logging
 import time
@@ -16,6 +17,9 @@ from typing import Any, Dict, List, Optional
 from ..agents.agent_factory import create_agent, available_agent_types, AgentNotFound
 from ..agents.base_agent import BaseAgent, AgentResult
 from ..schemas import agent_schemas
+
+# new import for workflow state hooks
+from backend.orchestration.state_manager import get_state_manager
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +67,9 @@ class AgentService:
                 try:
                     await self._handle_job(job)
                 except Exception:
-                    logger.exception("AgentService worker failed to handle job: %s", job)
+                    logger.exception(
+                        "AgentService worker failed to handle job: %s", job
+                    )
                 finally:
                     self._queue.task_done()
             except asyncio.CancelledError:
@@ -96,16 +102,26 @@ class AgentService:
                 if getattr(res, "success", False):
                     break
             except Exception as exc:
-                logger.exception("Agent job attempt %d failed for %s: %s", attempt, agent_type, exc)
+                logger.exception(
+                    "Agent job attempt %d failed for %s: %s", attempt, agent_type, exc
+                )
             if attempt <= retries:
                 await asyncio.sleep(backoff * (2 ** (attempt - 1)))
         # Persist audit to memory if available
         try:
             await self._persist_audit(agent, payload, last_result)
         except Exception:
-            logger.debug("Failed to persist audit after job for agent=%s", getattr(agent, "id", "unknown"))
+            logger.debug(
+                "Failed to persist audit after job for agent=%s",
+                getattr(agent, "id", "unknown"),
+            )
 
-    async def _ensure_agent(self, agent_type: str, name: Optional[str] = None, config: Optional[Dict[str, Any]] = None) -> BaseAgent:
+    async def _ensure_agent(
+        self,
+        agent_type: str,
+        name: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> BaseAgent:
         """
         Create or return an existing agent of the same type+name combination.
         """
@@ -116,12 +132,24 @@ class AgentService:
                     if a.name == name and getattr(a, "config", None) == (config or {}):
                         return a
             # create new agent
-            agent = create_agent(agent_type=agent_type, name=name or agent_type, config=config or {})
+            agent = create_agent(
+                agent_type=agent_type, name=name or agent_type, config=config or {}
+            )
             self._agents[agent.id] = agent
-            logger.info("AgentService created agent id=%s type=%s name=%s", agent.id, agent_type, agent.name)
+            logger.info(
+                "AgentService created agent id=%s type=%s name=%s",
+                agent.id,
+                agent_type,
+                agent.name,
+            )
             return agent
 
-    async def create_agent(self, agent_type: str, name: Optional[str] = None, config: Optional[Dict[str, Any]] = None) -> BaseAgent:
+    async def create_agent(
+        self,
+        agent_type: str,
+        name: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> BaseAgent:
         return await self._ensure_agent(agent_type, name=name, config=config)
 
     def get_agent(self, agent_id: str) -> Optional[BaseAgent]:
@@ -130,10 +158,23 @@ class AgentService:
     def list_agents(self) -> List[Dict[str, Any]]:
         out = []
         for a in self._agents.values():
-            out.append({"id": a.id, "name": a.name, "config": getattr(a, "config", {}), "running": a.is_running()})
+            out.append(
+                {
+                    "id": a.id,
+                    "name": a.name,
+                    "config": getattr(a, "config", {}),
+                    "running": a.is_running(),
+                }
+            )
         return out
 
-    async def run_agent(self, agent_id: str, payload: Optional[Dict[str, Any]] = None, sync: bool = False, timeout: Optional[float] = None) -> AgentResult:
+    async def run_agent(
+        self,
+        agent_id: str,
+        payload: Optional[Dict[str, Any]] = None,
+        sync: bool = False,
+        timeout: Optional[float] = None,
+    ) -> AgentResult:
         """
         Execute agent.run(...) either synchronously (blocking) or asynchronously.
         Returns AgentResult (or raises).
@@ -146,7 +187,9 @@ class AgentService:
         if sync:
             # call agent.run synchronously via run_sync wrapper if available
             try:
-                return await asyncio.get_event_loop().run_in_executor(None, lambda: agent.run_sync(**(payload or {})))
+                return await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: agent.run_sync(**(payload or {}))
+                )
             except Exception as e:
                 logger.exception("sync run failed for agent=%s", agent_id)
                 raise
@@ -175,11 +218,20 @@ class AgentService:
         finally:
             self._running_tasks.pop(agent_id, None)
 
-    def run_agent_sync(self, agent_id: str, payload: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None) -> AgentResult:
+    def run_agent_sync(
+        self,
+        agent_id: str,
+        payload: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+    ) -> AgentResult:
         """
         Blocking wrapper for synchronous contexts / tests.
         """
-        return asyncio.get_event_loop().run_until_complete(self.run_agent(agent_id=agent_id, payload=payload, sync=False, timeout=timeout))
+        return asyncio.get_event_loop().run_until_complete(
+            self.run_agent(
+                agent_id=agent_id, payload=payload, sync=False, timeout=timeout
+            )
+        )
 
     async def stop_agent(self, agent_id: str) -> None:
         agent = self.get_agent(agent_id)
@@ -199,13 +251,143 @@ class AgentService:
         except Exception:
             logger.exception("Failed to stop agent=%s", agent_id)
 
-    async def submit_job(self, agent_type: str, name: Optional[str] = None, config: Optional[Dict[str, Any]] = None, payload: Optional[Dict[str, Any]] = None, retries: int = 0, backoff: float = 0.5) -> None:
+    # ...existing code...
+    async def run_agent_node(
+        self,
+        agent_name: str,
+        instance_id: str,
+        config: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Adapter used by orchestration to invoke an agent node.
+        Returns normalized result:
+          {"context_updates": {...}, "handoff_to_node": Optional[str|list], "status": "ok"|"error", "detail": Optional[str]}
+        """
+        config = config or {}
+        context = context or {}
+        agent_instance_name = f"{agent_name}-{instance_id[:8]}"
+
+        try:
+            agent = await self._ensure_agent(
+                agent_type=agent_name, name=agent_instance_name, config=config
+            )
+        except AgentNotFound:
+            logger.error("Workflow requested unknown agent_name=%s", agent_name)
+            return {
+                "context_updates": {},
+                "handoff_to_node": None,
+                "status": "error",
+                "detail": f"unknown agent: {agent_name}",
+            }
+
+        payload = {"instance_id": instance_id, "config": config, "context": context}
+        try:
+            timeout = config.get("timeout") or None
+            result = await self.run_agent(
+                agent.id, payload=payload, sync=False, timeout=timeout
+            )
+        except Exception as exc:
+            logger.exception(
+                "run_agent_node failed for %s on instance %s: %s",
+                agent_name,
+                instance_id,
+                exc,
+            )
+            try:
+                sm = get_state_manager()
+                await sm.update_instance(
+                    instance_id,
+                    {"metadata": {"last_agent": agent_name, "last_error": str(exc)}},
+                    merge=True,
+                )
+            except Exception:
+                logger.debug("Failed to update state metadata after agent error")
+            return {
+                "context_updates": {},
+                "handoff_to_node": None,
+                "status": "error",
+                "detail": str(exc),
+            }
+
+        # Normalize various possible result shapes
+        context_updates: Dict[str, Any] = {}
+        handoff = None
+        status = "ok"
+        detail = None
+
+        if isinstance(result, AgentResult):
+            context_updates = (
+                getattr(result, "context_updates", {})
+                or getattr(result, "context", {})
+                or {}
+            )
+            handoff = getattr(result, "handoff_to_node", None)
+            status = getattr(result, "status", "ok")
+            detail = getattr(result, "detail", None)
+        elif isinstance(result, dict):
+            context_updates = (
+                result.get("context_updates") or result.get("context") or {}
+            )
+            handoff = result.get("handoff_to_node")
+            status = result.get("status", "ok")
+            detail = result.get("detail")
+        else:
+            try:
+                context_updates = dict(result)  # type: ignore
+            except Exception:
+                context_updates = {}
+
+        # Audit metadata to workflow state (best-effort)
+        try:
+            sm = get_state_manager()
+            await sm.update_instance(
+                instance_id,
+                {
+                    "metadata": {
+                        "last_agent": agent_name,
+                        "last_run_ts": int(time.time()),
+                    }
+                },
+                merge=True,
+            )
+        except Exception:
+            logger.debug("Failed to persist workflow metadata for agent run")
+
+        return {
+            "context_updates": context_updates,
+            "handoff_to_node": handoff,
+            "status": status,
+            "detail": detail,
+        }
+
+    # ...existing code...
+    async def submit_job(
+        self,
+        agent_type: str,
+        name: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+        payload: Optional[Dict[str, Any]] = None,
+        retries: int = 0,
+        backoff: float = 0.5,
+    ) -> None:
         """
         Enqueue a job to run in background worker.
         """
-        await self._queue.put({"agent_type": agent_type, "name": name, "config": config or {}, "payload": payload or {}, "retries": retries, "backoff": backoff})
+        await self._queue.put(
+            {
+                "agent_type": agent_type,
+                "name": name,
+                "config": config or {},
+                "payload": payload or {},
+                "retries": retries,
+                "backoff": backoff,
+            }
+        )
 
-    async def _persist_audit(self, agent: BaseAgent, payload: Dict[str, Any], result: Optional[AgentResult]) -> None:
+    async def _persist_audit(
+        self, agent: BaseAgent, payload: Dict[str, Any], result: Optional[AgentResult]
+    ) -> None:
         """
         Best-effort persistence of run/audit record into agent.memory if available.
         """
@@ -214,14 +396,21 @@ class AgentService:
                 "agent_id": agent.id,
                 "agent_name": agent.name,
                 "payload": payload,
-                "result": (result.__dict__ if isinstance(result, AgentResult) else result),
+                "result": (
+                    result.__dict__ if isinstance(result, AgentResult) else result
+                ),
                 "ts": int(time.time()),
             }
             # memory_service exposes store_memory(agent_id, key, value, metadata)
             if hasattr(agent.memory, "store_memory"):
-                await agent.memory.store_memory(agent_id=agent.id, key="audit", value=record, metadata={})
+                await agent.memory.store_memory(
+                    agent_id=agent.id, key="audit", value=record, metadata={}
+                )
             else:
-                logger.debug("No memory.store_memory available to persist audit for agent=%s", agent.id)
+                logger.debug(
+                    "No memory.store_memory available to persist audit for agent=%s",
+                    agent.id,
+                )
         except Exception:
             logger.exception("Failed to persist audit for agent=%s", agent.id)
 
@@ -233,6 +422,8 @@ class AgentService:
             return []
 
     # convenience singleton accessor
+
+
 def get_agent_service() -> AgentService:
     global _default_service
     if _default_service is None:

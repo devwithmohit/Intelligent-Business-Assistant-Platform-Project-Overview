@@ -4,11 +4,11 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 websockets==12.0
 
-# AI & Agent Libraries (Compatible versions)
-langchain>=0.1.13
-langchain-core>=0.1.33
-langchain-community>=0.0.29
-langgraph>=0.0.40
+# AI & Agent Libraries (Stable orchestration versions)
+langchain==0.1.20
+langchain-core==0.1.52
+langchain-community==0.0.38
+langgraph==0.0.55
 
 # LLM Providers (DeepSeek & Gemini only)
 requests==2.31.0
@@ -45,6 +45,14 @@ structlog==23.2.0
 # Background Tasks
 celery==5.3.4
 
+# Workflow & Graph Dependencies
+networkx==3.2.1
+graphviz==0.20.1
+
 # Utilities
 python-dateutil==2.8.2
 pytz==2023.3
+
+# Development & Testing (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1

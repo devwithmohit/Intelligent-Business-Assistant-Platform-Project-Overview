@@ -1,0 +1,48 @@
+# Workflow engine settings: timeouts, persistence, retry policies, visualization, limits.
+workflow:
+  # Where workflow JSON definitions are stored
+  persist_dir: "./data/workflows"
+  # Where runtime instance state snapshots are stored
+  state_dir: "./data/workflow_states"
+  # Max number of concurrently running workflow instances (worker-level limit)
+  max_concurrent_instances: 10
+  # Max node-to-node steps per instance before aborting (safety)
+  max_steps: 500
+  # Default per-node execution timeout (seconds)
+  step_timeout_seconds: 20
+  # Poll interval used by run-and-wait / CLI (seconds)
+  poll_interval_seconds: 0.5
+  # If an instance has no activity for this many seconds consider it idle/finished
+  instance_stable_window_seconds: 2
+
+retry_policy:
+  # Number of attempts to retry a failing node before marking error
+  per_node_attempts: 3
+  # Exponential backoff base (seconds) between retries
+  backoff_base_seconds: 2
+  # Maximum backoff delay (seconds)
+  max_backoff_seconds: 60
+  # Optional list of exception names (strings) that should trigger retry; empty = retry on any transient error
+  retry_on_exceptions: []
+
+persistence:
+  # Try Redis backing for fast state persistence if available; otherwise file system is used
+  use_redis: false
+  redis_url: "redis://localhost:6379/0"
+
+visualization:
+  # Directory to place generated mermaid/dot/svg outputs
+  out_dir: "./data/workflows/visuals"
+  # Attempt to render DOT -> SVG if graphviz python bindings are installed
+  enable_graphviz_render: false
+
+limits:
+  # Max characters allowed when passing large context fields between nodes
+  max_context_field_chars: 20000
+
+security:
+  # Require authenticated user to start workflows via API endpoints
+  require_auth_for_start: false
+
+logging:
+  level: "INFO"
