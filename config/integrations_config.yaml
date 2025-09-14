@@ -1,0 +1,91 @@
+# Integration settings & credentials (example). DO NOT COMMIT SECRETS to VCS — prefer env vars or a secrets manager.
+version: 1
+
+integrations:
+  # Gmail (OAuth)
+  gmail_main:
+    name: gmail_main
+    type: gmail
+    client_secrets_path: "/path/to/google/client_secret.json"   # local path to OAuth client secrets
+    token_path: "/path/to/google/gmail_token.json"              # persisted user token (created after auth)
+    scopes:
+      - "https://www.googleapis.com/auth/gmail.send"
+      - "https://www.googleapis.com/auth/gmail.readonly"
+
+  # Outlook / Exchange (exchangelib)
+  outlook_mail:
+    name: outlook_mail
+    type: outlook
+    email: "user@example.com"
+    username: "DOMAIN\\user"
+    password: "REPLACE_WITH_ENV_OR_SECRET"                      # recommended to read from env
+    server: "outlook.example.com"
+    autodiscover: true
+
+  # Google Calendar (OAuth)
+  gcal:
+    name: gcal
+    type: google_calendar
+    client_secrets_path: "/path/to/google/client_secret.json"
+    token_path: "/path/to/google/gcal_token.json"
+    calendar_id: "primary"
+    scopes:
+      - "https://www.googleapis.com/auth/calendar"
+
+  # Google Drive (OAuth)
+  gdrive:
+    name: gdrive
+    type: google_drive
+    client_secrets_path: "/path/to/google/client_secret.json"
+    token_path: "/path/to/google/gdrive_token.json"
+    scopes:
+      - "https://www.googleapis.com/auth/drive"
+
+  # OneDrive / Microsoft Graph
+  onedrive:
+    name: onedrive
+    type: onedrive
+    access_token: ""                                            # short-lived token; prefer client credentials below
+    client_id: "YOUR_CLIENT_ID"
+    client_secret: "REPLACE_WITH_ENV_OR_SECRET"
+    tenant_id: "YOUR_TENANT_ID"
+    drive_id: ""                                                 # optional: specific drive id
+
+  # Slack (bot token)
+  slack_workspace:
+    name: slack_workspace
+    type: slack
+    token: "xoxb-REPLACE_WITH_ENV_OR_SECRET"
+    default_channel: "C01234567"
+
+  # Microsoft Teams (incoming webhook or Graph)
+  teams_notifications:
+    name: teams_notifications
+    type: teams
+    webhook_url: "https://outlook.office.com/webhook/..."       # incoming webhook URL (preferred for simple posts)
+    access_token: ""                                            # optional: Graph API token
+    default_team_id: ""
+    default_channel_id: ""
+
+  # Salesforce
+  salesforce_prod:
+    name: salesforce_prod
+    type: salesforce
+    username: "sales@company.com"
+    password: "REPLACE_WITH_ENV_OR_SECRET"
+    security_token: "REPLACE_WITH_ENV_OR_SECRET"
+    domain: "login"
+
+  # HubSpot
+  hubspot_main:
+    name: hubspot_main
+    type: hubspot
+    api_key: ""                                                  # deprecated for some accounts; prefer access_token
+    access_token: ""                                             # OAuth access token
+
+  # Generic / custom provider (fallback)
+  custom_webhook:
+    name: custom_webhook
+    type: generic
+    endpoint: "https://example.com/webhook"
+    api_key: "REPLACE_WITH_ENV_OR_SECRET"
