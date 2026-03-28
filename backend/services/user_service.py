@@ -2,11 +2,19 @@ import asyncio
 import functools
 from typing import Any, List, Optional
 
-from ...models import user_models
-from ...schemas import user_schemas
-from ...core import database
+from ..core import database
+from ..models import user_models
+from ..schemas import user_schemas
 
 # ...existing code...
+
+
+def _get_user_model():
+    user_model = getattr(user_models, "User", None)
+    if user_model is None:
+        raise RuntimeError("User model is not implemented yet")
+    return user_model
+
 
 def _get_session():
     """
@@ -20,9 +28,10 @@ def _get_session():
 
 
 def _sync_get_user_by_email(email: str) -> Optional[Any]:
+    user_model = _get_user_model()
     db = _get_session()
     try:
-        return db.query(user_models.User).filter(user_models.User.email == email).first()
+        return db.query(user_model).filter(user_model.email == email).first()
     finally:
         db.close()
 
@@ -33,9 +42,10 @@ async def get_user_by_email(email: str) -> Optional[Any]:
 
 
 def _sync_get_user_by_id(user_id: int) -> Optional[Any]:
+    user_model = _get_user_model()
     db = _get_session()
     try:
-        return db.query(user_models.User).filter(user_models.User.id == user_id).first()
+        return db.query(user_model).filter(user_model.id == user_id).first()
     finally:
         db.close()
 
@@ -46,9 +56,10 @@ async def get_user_by_id(user_id: int) -> Optional[Any]:
 
 
 def _sync_get_users(skip: int = 0, limit: int = 100) -> List[Any]:
+    user_model = _get_user_model()
     db = _get_session()
     try:
-        q = db.query(user_models.User).order_by(user_models.User.id).offset(skip).limit(limit)
+        q = db.query(user_model).order_by(user_model.id).offset(skip).limit(limit)
         return q.all()
     finally:
         db.close()
@@ -60,9 +71,10 @@ async def get_users(skip: int = 0, limit: int = 100) -> List[Any]:
 
 
 def _sync_create_user(user_in: user_schemas.UserCreate) -> Any:
+    user_model = _get_user_model()
     db = _get_session()
     try:
-        obj = user_models.User(**user_in.dict())
+        obj = user_model(**user_in.model_dump())
         db.add(obj)
         db.commit()
         db.refresh(obj)
@@ -77,12 +89,13 @@ async def create_user(user_in: user_schemas.UserCreate) -> Any:
 
 
 def _sync_update_user(user_id: int, payload: user_schemas.UserUpdate) -> Optional[Any]:
+    user_model = _get_user_model()
     db = _get_session()
     try:
-        obj = db.query(user_models.User).filter(user_models.User.id == user_id).first()
+        obj = db.query(user_model).filter(user_model.id == user_id).first()
         if not obj:
             return None
-        update_data = payload.dict(exclude_unset=True)
+        update_data = payload.model_dump(exclude_unset=True)
         for k, v in update_data.items():
             setattr(obj, k, v)
         db.add(obj)
@@ -99,9 +112,10 @@ async def update_user(user_id: int, payload: user_schemas.UserUpdate) -> Optiona
 
 
 def _sync_delete_user(user_id: int) -> bool:
+    user_model = _get_user_model()
     db = _get_session()
     try:
-        obj = db.query(user_models.User).filter(user_models.User.id == user_id).first()
+        obj = db.query(user_model).filter(user_model.id == user_id).first()
         if not obj:
             return False
         db.delete(obj)

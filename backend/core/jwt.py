@@ -3,17 +3,7 @@ from typing import Any, Dict, Optional
 
 from jose import jwt, JWTError
 
-try:
-    from .config import settings  # typical project pattern
-except Exception:
-    # fallback defaults for local dev — replace via .env/config in production
-    class _S:
-        SECRET_KEY = "change-me"
-        ALGORITHM = "HS256"
-        ACCESS_TOKEN_EXPIRE_MINUTES = 60
-        REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-    settings = _S()
+from .config import settings
 
 
 class TokenError(Exception):

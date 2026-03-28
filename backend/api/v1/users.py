@@ -1,7 +1,6 @@
-# ...existing code...
-from typing import List, Optional
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from ...services import user_service, auth_service
 from ...schemas import user_schemas
@@ -50,6 +49,12 @@ async def update_user(
     is_admin = getattr(current_user, "is_admin", False)
     if (getattr(current_user, "id", None) != user_id) and not is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this user")
+
+    if payload.is_admin is True and not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can grant admin privileges",
+        )
 
     user = await user_service.get_user_by_id(user_id)
     if not user:

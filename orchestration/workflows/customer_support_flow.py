@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from backend.orchestration.graph_builder import GraphBuilder
+from orchestration.graph_builder import GraphBuilder
 
 logger = logging.getLogger(__name__)
 

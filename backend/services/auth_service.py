@@ -3,24 +3,14 @@ from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from passlib.context import CryptContext
-from jose import jwt, JWTError
 
-from ...services import user_service
-from ...schemas import auth_schemas, user_schemas
-from ...core import config
+from ..core import config
+from ..schemas import auth_schemas, user_schemas
+from . import user_service
 
-try:
-    SETTINGS = config.settings  # typical pattern: core.config.settings
-except Exception:
-    # minimal fallback values (replace with real secret in .env)
-    class _S:
-        SECRET_KEY = "change-me"
-        ALGORITHM = "HS256"
-        ACCESS_TOKEN_EXPIRE_MINUTES = 60
-        REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-    SETTINGS = _S()
+SETTINGS = config.settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")

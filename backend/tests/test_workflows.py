@@ -5,9 +5,9 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from backend.orchestration.graph_builder import GraphBuilder
-from backend.orchestration.workflow_executor import WorkflowExecutor
-from backend.orchestration.state_manager import StateManager
+from orchestration.graph_builder import GraphBuilder
+from orchestration.state_management import StateManager
+from orchestration.workflow_executor import WorkflowExecutor
 
 logger = logging.getLogger(__name__)
 

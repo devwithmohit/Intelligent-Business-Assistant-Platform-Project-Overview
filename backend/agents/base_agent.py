@@ -5,8 +5,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from orchestration.state_management import get_state_manager
+
 from ..services import llm_service, memory_service, tool_service
-from backend.orchestration.state_manager import get_state_manager
 
 logger = logging.getLogger("backend.agents.base")
 

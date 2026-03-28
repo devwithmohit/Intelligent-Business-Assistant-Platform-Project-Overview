@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 try:
     # import user read schema for optional inclusion in token responses
@@ -37,5 +37,4 @@ class TokenResponse(BaseModel):
     # include user info if service provides it; allow None if not present
     user: Optional[UserRead] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

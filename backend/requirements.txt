@@ -41,6 +41,7 @@ passlib[bcrypt]==1.7.4
 
 # Monitoring & Logging
 structlog==23.2.0
+slowapi==0.1.9
 
 # Background Tasks
 celery==5.3.4

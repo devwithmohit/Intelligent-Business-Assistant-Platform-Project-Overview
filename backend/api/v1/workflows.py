@@ -2,10 +2,14 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from backend.schemas import orchestration_schemas as schemas
-from backend.services.workflow_service import get_workflow_service, WorkflowService, WorkflowServiceError
+from ...schemas import orchestration_schemas as schemas
+from ...services.workflow_service import (
+    WorkflowService,
+    WorkflowServiceError,
+    get_workflow_service,
+)
 
-router = APIRouter(prefix="/workflows", tags=["workflows"])
+router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
 
 def _svc() -> WorkflowService:
@@ -23,6 +27,28 @@ async def create_workflow(defn: schemas.WorkflowDefinition, service: WorkflowSer
         return await service.create_workflow(defn)
     except WorkflowServiceError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/instances", response_model=Dict[str, Any])
+async def list_instances(service: WorkflowService = Depends(_svc)):
+    return await service.list_instances()
+
+
+@router.get("/instances/{instance_id}", response_model=Optional[schemas.WorkflowInstance])
+async def get_instance(instance_id: str, service: WorkflowService = Depends(_svc)):
+    inst = await service.get_instance(instance_id)
+    if not inst:
+        raise HTTPException(status_code=404, detail="instance not found")
+    return inst
+
+
+@router.post("/instances/{instance_id}/snapshot", response_model=Dict[str, Any])
+async def snapshot_instance(instance_id: str, out_dir: Optional[str] = None, service: WorkflowService = Depends(_svc)):
+    try:
+        path = await service.snapshot_instance(instance_id, out_dir)
+        return {"snapshot_path": path}
+    except WorkflowServiceError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.put("/{name}", response_model=Dict[str, Any])
@@ -62,7 +88,7 @@ async def start_workflow(name: str, req: schemas.WorkflowStartRequest, service: 
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("/{name}/run", response_model=Dict[str, Any])
+@router.post("/{name}/run", response_model=schemas.WorkflowInstance)
 async def run_and_wait(name: str, req: schemas.WorkflowStartRequest, timeout: Optional[float] = Query(None, description="Seconds to wait for completion"), service: WorkflowService = Depends(_svc)):
     if req.workflow_name != name:
         raise HTTPException(status_code=400, detail="workflow_name in body must match path")
@@ -72,28 +98,6 @@ async def run_and_wait(name: str, req: schemas.WorkflowStartRequest, timeout: Op
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/instances", response_model=Dict[str, Any])
-async def list_instances(service: WorkflowService = Depends(_svc)):
-    return await service.list_instances()
-
-
-@router.get("/instances/{instance_id}", response_model=Optional[schemas.WorkflowInstance])
-async def get_instance(instance_id: str, service: WorkflowService = Depends(_svc)):
-    inst = await service.get_instance(instance_id)
-    if not inst:
-        raise HTTPException(status_code=404, detail="instance not found")
-    return inst
-
-
-@router.post("/instances/{instance_id}/snapshot", response_model=Dict[str, Any])
-async def snapshot_instance(instance_id: str, out_dir: Optional[str] = None, service: WorkflowService = Depends(_svc)):
-    try:
-        path = await service.snapshot_instance(instance_id, out_dir)
-        return {"snapshot_path": path}
-    except WorkflowServiceError as e:
-        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{name}/visualize", response_model=Dict[str, str])

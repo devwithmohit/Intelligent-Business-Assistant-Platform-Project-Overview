@@ -6,9 +6,9 @@ import pkgutil
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from backend.orchestration.graph_builder import GraphBuilder
-from backend.orchestration.workflow_executor import WorkflowExecutor
-from backend.orchestration.state_manager import StateManager
+from orchestration.graph_builder import GraphBuilder
+from orchestration.state_management import StateManager
+from orchestration.workflow_executor import WorkflowExecutor
 
 logger = logging.getLogger("backend.cli.workflow_tool")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

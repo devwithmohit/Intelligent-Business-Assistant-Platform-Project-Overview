@@ -3,11 +3,12 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from backend.schemas import orchestration_schemas as _schemas
-from backend.orchestration.graph_builder import GraphBuilder, GraphBuilderError
-from backend.orchestration.state_manager import get_state_manager, StateManager
-from backend.orchestration.workflow_executor import WorkflowExecutor
-from backend.orchestration.visualizer import Visualizer
+from orchestration.graph_builder import GraphBuilder, GraphBuilderError
+from orchestration.state_management import StateManager, get_state_manager
+from orchestration.visualizer import Visualizer
+from orchestration.workflow_executor import WorkflowExecutor
+
+from ..schemas import orchestration_schemas as _schemas
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class WorkflowService:
         path = self._path_for(defn.name)
         try:
             with open(path, "w", encoding="utf-8") as fh:
-                fh.write(defn.json(indent=2))
+                fh.write(defn.model_dump_json(indent=2))
             logger.info("Persisted workflow definition %s -> %s", defn.name, path)
         except Exception as e:
             logger.exception("Failed to persist workflow %s: %s", defn.name, e)

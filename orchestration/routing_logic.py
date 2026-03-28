@@ -138,7 +138,7 @@ class AgentRunner:
 
     def __init__(self):
         try:
-            from ..services import agent_service  # type: ignore
+            from backend.services import agent_service  # type: ignore
             self._svc = agent_service
         except Exception:
             self._svc = None

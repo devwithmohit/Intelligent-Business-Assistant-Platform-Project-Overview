@@ -2,10 +2,15 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 
+from ...services import auth_service
 from ...services.integration_manager import get_integration_manager, IntegrationManager, IntegrationManagerError
 from ...schemas.integration_schemas import parse_integration_config
 
-router = APIRouter(prefix="/api/v1/integrations", tags=["integrations"])
+router = APIRouter(
+    prefix="/api/v1/integrations",
+    tags=["integrations"],
+    dependencies=[Depends(auth_service.get_current_user)],
+)
 
 
 async def _manager() -> IntegrationManager:

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # try to load runtime settings (optional)
 try:
-    from ...core import config as core_config  # type: ignore
+    from ..core import config as core_config  # type: ignore
     SETTINGS = core_config.settings
 except Exception:
     SETTINGS = None  # type: ignore

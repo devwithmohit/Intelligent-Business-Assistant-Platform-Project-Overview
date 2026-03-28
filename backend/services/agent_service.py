@@ -14,12 +14,11 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
+from orchestration.state_management import get_state_manager
+
 from ..agents.agent_factory import create_agent, available_agent_types, AgentNotFound
 from ..agents.base_agent import BaseAgent, AgentResult
 from ..schemas import agent_schemas
-
-# new import for workflow state hooks
-from backend.orchestration.state_manager import get_state_manager
 
 logger = logging.getLogger(__name__)
 

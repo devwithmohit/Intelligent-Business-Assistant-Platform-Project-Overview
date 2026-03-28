@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
+
+from fastapi import APIRouter, Body, HTTPException, Request, status
 
 from ...services import auth_service
 from ...schemas import auth_schemas, user_schemas
@@ -9,22 +9,28 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=auth_schemas.TokenResponse)
-async def login(form_data: Optional[OAuth2PasswordRequestForm] = Depends(), body: Optional[auth_schemas.LoginRequest] = None):
+async def login(
+    request: Request,
+    body: Optional[auth_schemas.LoginRequest] = Body(None),
+):
     """
     Login with email + password.
     Accepts either application/x-www-form-urlencoded (OAuth2PasswordRequestForm)
     or JSON body matching LoginRequest.
     Returns access (and optionally refresh) token.
     """
-    # support form or json
-    if form_data:
-        email = form_data.username
-        password = form_data.password
-    elif body:
+    if body:
         email = body.email
         password = body.password
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing credentials")
+        form_data = await request.form()
+        email = form_data.get("username") or form_data.get("email")
+        password = form_data.get("password")
+        if not email or not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing credentials",
+            )
 
     try:
         token = await auth_service.login(email=email, password=password)
